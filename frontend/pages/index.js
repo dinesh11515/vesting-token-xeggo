@@ -13,6 +13,8 @@ export default function Home() {
   const [owner ,setOwner] = useState(false);
   const [amount,setAmount] = useState(0);
   const [claimamount,setClaimAmount] = useState(0);
+  const [added,setAdded] = useState(false);
+  const [filled,setFilled] = useState(10);
   const connect = async () => {
     try{
       const provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -21,16 +23,22 @@ export default function Home() {
       setSigner(signer);
       const contract = new ethers.Contract(address,abi,signer)
       setOwner((await (signer.getAddress())).toLowerCase() === (await contract.owner()).toLowerCase())
+      const data = await contract.vesting(signer.getAddress())
+      setAdded(data.selected);
+      setFilled(await contract.filled());
       setContract(contract);
-      const amount = await contract.balanceOf(await signer.getAddress());
-      setAmount(ethers.utils.formatEther(amount));
-      const claimamount = await contract.claimableBalance();
-      setClaimAmount(ethers.utils.formatEther(claimamount));
+      if(data.selected){
+        const amount = await contract.balanceOf(await signer.getAddress());
+        setAmount(ethers.utils.formatEther(amount));
+        const claimamount = await contract.claimableBalance();
+        setClaimAmount(ethers.utils.formatEther(claimamount));
+      }
     }
     catch(e){
       alert(e);
     }
   }
+  
 
   const add = async () => {
     try{
@@ -70,7 +78,14 @@ export default function Home() {
           <button className='p-3 rounded-lg bg-violet-300'>Connected</button>
         }
       </div>
-      <div className='flex flex-col justify-center gap-5'>
+      <div className='flex flex-col items-center gap-5'>
+        {
+          signer!==null && !added && 
+          <div className='flex flex-col items-center'>
+            <p>You are not added to Vesting token reach out to admin to add you</p>
+            <p> {10-filled} spots left....</p>
+          </div>
+        }
         {
           owner && 
           <div className='flex flex-col items-center gap-5'>
@@ -82,7 +97,7 @@ export default function Home() {
         <div className='flex flex-col gap-3 items-center'>
           <p>Tokens Claimed : {amount}</p>
           <p>Available for Claiming : {claimamount}</p>
-          <button className='p-2 rounded-lg bg-violet-500 text-white w-20' onClick={claim}>Claim</button>
+          <button className='p-2 rounded-lg bg-violet-500 text-white w-20' disabled={!added} onClick={claim}>Claim</button>
         </div>
       </div>
       

@@ -15,11 +15,34 @@ export default function Home() {
   const [claimamount,setClaimAmount] = useState(0);
   const [added,setAdded] = useState(false);
   const [filled,setFilled] = useState(10);
+  const networks = {
+    mumbai: {
+      chainId: `0x${Number(80001).toString(16)}`,
+      chainName: "Mumbai Testnet",
+      nativeCurrency: {
+        name: "MATIC",
+        symbol: "MATIC",
+        decimals: 18
+      },
+      rpcUrls: ["https://rpc-mumbai.maticvigil.com/"],
+      blockExplorerUrls: ["https://mumbai.polygonscan.com/"]
+    }
+  }
   const connect = async () => {
     try{
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const provider = new ethers.providers.Web3Provider(window.ethereum,"any")
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner()
+      if(await signer.getChainId() != 80001){
+        await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+                {
+                    ...networks["mumbai"]
+                }
+            ]
+        })
+    }
       setSigner(signer);
       const contract = new ethers.Contract(address,abi,signer)
       setOwner((await (signer.getAddress())).toLowerCase() === (await contract.owner()).toLowerCase())
